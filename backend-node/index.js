@@ -4,10 +4,10 @@ require("dotenv").config();
 const passport = require("passport");
 require("./config/passport");
 
-app.use(passport.initialize());
+
 
 const app = express();
-
+app.use(passport.initialize());
 const connectDB = require("./config/db");
 
 // Connect DB

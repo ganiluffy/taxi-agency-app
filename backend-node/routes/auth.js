@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const passport = require("passport");
 
 const router = express.Router();
 
@@ -58,5 +59,23 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
+router.get("/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+router.get("/google/callback",
+  passport.authenticate("google", { session: false }),
+  (req, res) => {
+    const token = jwt.sign(
+      { id: req.user._id, role: req.user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({ token });
+  }
+);
 
 module.exports = router;
