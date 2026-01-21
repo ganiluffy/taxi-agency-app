@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const passport = require("passport");
+require("./config/passport");
+
+app.use(passport.initialize());
 
 const app = express();
 
