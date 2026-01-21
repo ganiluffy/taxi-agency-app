@@ -2,29 +2,27 @@ const express = require("express");
 const Booking = require("../models/Booking");
 const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
-const { calculateFare } = require("../services/fareService");
+const { calculateFare } = require("../services/fareservice");
+const { getDistanceInKm } = require("../services/distanceService");
 
 const router = express.Router();
 
 /**
  * @route   POST /api/bookings
- * @desc    Create a new booking (user)
+ * @desc    Create a new booking (real distance + fare)
  * @access  Private (User)
  */
 router.post("/", auth, async (req, res) => {
   try {
-    const {
-      pickup,
-      destination,
-      distanceKm,
-      bookingType,
-      paymentMode,
-    } = req.body;
+    const { pickup, destination, bookingType, paymentMode } = req.body;
 
-    // 1️⃣ Call FastAPI Fare Engine
+    // 1️⃣ Get REAL distance from Google Maps
+    const distanceKm = await getDistanceInKm(pickup, destination);
+
+    // 2️⃣ Calculate fare via FastAPI
     const fareData = await calculateFare(distanceKm, bookingType);
 
-    // 2️⃣ Create booking in MongoDB
+    // 3️⃣ Save booking in MongoDB
     const booking = await Booking.create({
       user: req.user.id,
       pickup,
@@ -36,13 +34,13 @@ router.post("/", auth, async (req, res) => {
       status: "pending",
     });
 
-    // 3️⃣ Return booking + fare breakdown
+    // 4️⃣ Send response
     res.status(201).json({
       booking,
       fareBreakdown: fareData,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Booking error:", error.message);
     res.status(500).json({ message: "Booking failed" });
   }
 });
@@ -97,5 +95,6 @@ router.patch("/:id/status", auth, role("admin"), async (req, res) => {
     res.status(500).json({ message: "Failed to update status" });
   }
 });
+console.log("Distance fn:", typeof getDistanceInKm);
 
 module.exports = router;
